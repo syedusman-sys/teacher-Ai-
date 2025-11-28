@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Teacher AI Assistant</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 30px 60px rgba(0,0,0,0.2);
+        }
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+        .card-icon {
+            font-size: 2rem;
+            margin-right: 15px;
+            padding: 15px;
+            border-radius: 15px;
+            color: white;
+        }
+        .summarize-icon { background: linear-gradient(45deg, #ff6b6b, #ee5a24); }
+        .question-icon { background: linear-gradient(45deg, #4834d4, #686de0); }
+        .test-icon { background: linear-gradient(45deg, #00d2d3, #54a0ff); }
+        .card h2 {
+            font-size: 1.5rem;
+            color: #2c3e50;
+            font-weight: 600;
+        }
+        .file-upload {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        .file-upload input[type=file] {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+        .file-upload-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            border: 2px dashed #ddd;
+            border-radius: 15px;
+            background: #f8f9fa;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            color: #666;
+        }
+        .file-upload-label:hover {
+            border-color: #667eea;
+            background: #f0f2ff;
+            color: #667eea;
+        }
+        .file-upload-label i {
+            margin-right: 10px;
+            font-size: 1.2rem;
+        }
+        input[type="text"], input[type="number"], select, textarea {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            font-size: 1rem;
+            margin-bottom: 15px;
+            transition: border-color 0.3s ease;
+            font-family: inherit;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        textarea {
+            height: 120px;
+            resize: vertical;
+        }
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+        .btn:active {
+            transform: translateY(0);
+        }
+        .result {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 20px;
+            border-left: 5px solid #667eea;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .result h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+        .result div {
+            line-height: 1.6;
+            color: #495057;
+        }
+        .question-item {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 15px 0;
+            border-left: 4px solid #667eea;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            color: #667eea;
+            font-weight: 500;
+        }
+        .loading i {
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        @media (max-width: 768px) {
+            .header h1 { font-size: 2rem; }
+            .grid { grid-template-columns: 1fr; }
+            .card { padding: 20px; }
+            .input-group { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-graduation-cap"></i> Teacher AI Assistant</h1>
+            <p>Empower your teaching with AI-driven content summarization and question generation</p>
+        </div>
+        
+        <div class="grid">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon summarize-icon">
+                        <i class="fas fa-file-text"></i>
+                    </div>
+                    <h2>Content Summarization</h2>
+                </div>
+                
+                <div class="file-upload">
+                    <input type="file" id="fileUpload" accept=".pdf,.docx,.jpg,.jpeg,.png" onchange="handleFileUpload()">
+                    <label for="fileUpload" class="file-upload-label">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        Upload PDF, DOCX, or Image
+                    </label>
+                </div>
+                
+                <input type="text" id="chapterTitle" placeholder="Enter topic or chapter title">
+                
+                <button class="btn" onclick="summarizeChapter()">
+                    <i class="fas fa-magic"></i>
+                    Generate Summary
+                </button>
+                
+                <div class="loading" id="summaryLoading">
+                    <i class="fas fa-spinner"></i>
+                    Generating summary...
+                </div>
+                
+                <div id="summaryResult" class="result" style="display:none;"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon question-icon">
+                        <i class="fas fa-question-circle"></i>
+                    </div>
+                    <h2>Ask AI Assistant</h2>
+                </div>
+                
+                <textarea id="questionInput" placeholder="Ask any educational question..."></textarea>
+                
+                <button class="btn" onclick="askQuestion()">
+                    <i class="fas fa-brain"></i>
+                    Get Answer
+                </button>
+                
+                <div class="loading" id="questionLoading">
+                    <i class="fas fa-spinner"></i>
+                    Thinking...
+                </div>
+                
+                <div id="answerResult" class="result" style="display:none;"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon test-icon">
+                        <i class="fas fa-clipboard-list"></i>
+                    </div>
+                    <h2>Test Question Generator</h2>
+                </div>
+                
+                <div class="file-upload">
+                    <input type="file" id="questionFileUpload" accept=".pdf,.docx,.jpg,.jpeg,.png" onchange="handleQuestionFileUpload()">
+                    <label for="questionFileUpload" class="file-upload-label">
+                        <i class="fas fa-upload"></i>
+                        Upload Content for Questions
+                    </label>
+                </div>
+                
+                <input type="text" id="topic" placeholder="Enter topic for questions">
+                
+                <div class="input-group">
+                    <input type="number" id="questionCount" value="5" min="1" max="10" placeholder="Count">
+                    <select id="difficulty">
+                        <option value="easy">Easy</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="hard">Hard</option>
+                    </select>
+                </div>
+                
+                <button class="btn" onclick="generateQuestions()">
+                    <i class="fas fa-cogs"></i>
+                    Generate Questions
+                </button>
+                
+                <div class="loading" id="questionsLoading">
+                    <i class="fas fa-spinner"></i>
+                    Creating questions...
+                </div>
+                
+                <div id="questionsResult" class="result" style="display:none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let fileContent = '';
+        let questionFileContent = '';
+        
+        async function handleFileUpload() {
+            const fileInput = document.getElementById('fileUpload');
+            const file = fileInput.files[0];
+            if (!file) return;
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            const response = await fetch('/upload_file', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            if (result.success) {
+                fileContent = result.content;
+                document.getElementById('chapterTitle').value = file.name;
+            } else {
+                alert('Error: ' + result.error);
+            }
+        }
+        
+        async function handleQuestionFileUpload() {
+            const fileInput = document.getElementById('questionFileUpload');
+            const file = fileInput.files[0];
+            if (!file) return;
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            const response = await fetch('/upload_file', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            if (result.success) {
+                questionFileContent = result.content;
+                document.getElementById('topic').value = file.name;
+                console.log('Extracted content:', result.content);
+                alert('File uploaded successfully! Content extracted.');
+            } else {
+                alert('Error: ' + result.error);
+            }
+        }
+        
+        async function summarizeChapter() {
+            const title = document.getElementById('chapterTitle').value;
+            const loading = document.getElementById('summaryLoading');
+            const resultDiv = document.getElementById('summaryResult');
+            
+            loading.style.display = 'block';
+            resultDiv.style.display = 'none';
+            
+            const response = await fetch('/summarize', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({chapter_title: title, chapter_text: '', file_content: fileContent})
+            });
+            
+            const result = await response.json();
+            loading.style.display = 'none';
+            
+            if (result.success) {
+                const decodedSummary = result.summary.replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, '&');
+                resultDiv.innerHTML = `<h3><i class="fas fa-file-alt"></i> Summary</h3><div>${decodedSummary.replace(/\n/g, '<br>')}</div>`;
+            } else {
+                resultDiv.innerHTML = `<h3><i class="fas fa-exclamation-triangle"></i> Error</h3><p>${result.error}</p>`;
+            }
+            resultDiv.style.display = 'block';
+        }
+        
+        async function askQuestion() {
+            const question = document.getElementById('questionInput').value;
+            const loading = document.getElementById('questionLoading');
+            const resultDiv = document.getElementById('answerResult');
+            
+            loading.style.display = 'block';
+            resultDiv.style.display = 'none';
+            
+            const response = await fetch('/ask_question', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({question: question})
+            });
+            
+            const result = await response.json();
+            loading.style.display = 'none';
+            
+            if (result.success) {
+                const decodedAnswer = result.answer.replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, '&');
+                resultDiv.innerHTML = `<h3><i class="fas fa-lightbulb"></i> Answer</h3><div>${decodedAnswer.replace(/\n/g, '<br>')}</div>`;
+            } else {
+                resultDiv.innerHTML = `<h3><i class="fas fa-exclamation-triangle"></i> Error</h3><p>${result.error}</p>`;
+            }
+            resultDiv.style.display = 'block';
+        }
+        
+        async function generateQuestions() {
+            const topic = document.getElementById('topic').value;
+            const count = document.getElementById('questionCount').value;
+            const difficulty = document.getElementById('difficulty').value;
+            const loading = document.getElementById('questionsLoading');
+            const resultDiv = document.getElementById('questionsResult');
+            
+            loading.style.display = 'block';
+            resultDiv.style.display = 'none';
+            
+            const response = await fetch('/generate_questions', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({topic: topic, count: parseInt(count), difficulty: difficulty, file_content: questionFileContent})
+            });
+            
+            const result = await response.json();
+            loading.style.display = 'none';
+            
+            if (result.success) {
+                let html = '<h3><i class="fas fa-list-ol"></i> Generated Questions</h3>';
+                result.questions.forEach((q, i) => {
+                    html += `<div class="question-item">
+                        <strong><i class="fas fa-question"></i> Question ${i+1}:</strong> ${q.question}<br><br>
+                        ${q.options.join('<br>')}<br><br>
+                        <strong><i class="fas fa-check-circle"></i> Answer:</strong> ${q.answer}<br>
+                        <strong><i class="fas fa-info-circle"></i> Explanation:</strong> ${q.explanation}
+                    </div>`;
+                });
+                resultDiv.innerHTML = html;
+            } else {
+                resultDiv.innerHTML = `<h3><i class="fas fa-exclamation-triangle"></i> Error</h3><p>${result.error}</p>`;
+            }
+            resultDiv.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
