@@ -285,6 +285,13 @@
                     </select>
                 </div>
                 
+                <div class="input-group">
+                    <select id="questionType">
+                        <option value="mcq" selected>MCQ</option>
+                        <option value="subjective">Subjective</option>
+                    </select>
+                </div>
+                
                 <button class="btn" onclick="generateQuestions()">
                     <i class="fas fa-cogs"></i>
                     Generate Questions
@@ -412,26 +419,40 @@
             loading.style.display = 'block';
             resultDiv.style.display = 'none';
             
+            const questionType = document.getElementById('questionType').value;
+            
             const response = await fetch('/generate_questions', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({topic: topic, count: parseInt(count), difficulty: difficulty, file_content: questionFileContent})
+                body: JSON.stringify({topic: topic, count: parseInt(count), difficulty: difficulty, question_type: questionType, file_content: questionFileContent})
             });
             
             const result = await response.json();
             loading.style.display = 'none';
             
             if (result.success) {
-                let html = '<h3><i class="fas fa-list-ol"></i> Generated Questions</h3>';
-                result.questions.forEach((q, i) => {
-                    html += `<div class="question-item">
-                        <strong><i class="fas fa-question"></i> Question ${i+1}:</strong> ${q.question}<br><br>
-                        ${q.options.join('<br>')}<br><br>
-                        <strong><i class="fas fa-check-circle"></i> Answer:</strong> ${q.answer}<br>
-                        <strong><i class="fas fa-info-circle"></i> Explanation:</strong> ${q.explanation}
-                    </div>`;
-                });
-                resultDiv.innerHTML = html;
+                // Check if it's a rejection message
+                if (result.questions.length === 1 && 
+                    (result.questions[0].question.includes("I can help with study-related questions") || 
+                     result.questions[0].question.includes("I cannot reply with that"))) {
+                    resultDiv.innerHTML = `<h3><i class="fas fa-exclamation-triangle"></i> Notice</h3><p>${result.questions[0].question}</p>`;
+                } else {
+                    let html = '<h3><i class="fas fa-list-ol"></i> Generated Questions</h3>';
+                    result.questions.forEach((q, i) => {
+                        html += `<div class="question-item">
+                            <strong><i class="fas fa-question"></i> Question ${i+1}:</strong> ${q.question}<br><br>`;
+                        
+                        // Show options only for MCQ
+                        if (q.options && q.options.length > 0) {
+                            html += `${q.options.join('<br>')}<br><br>`;
+                        }
+                        
+                        html += `<strong><i class="fas fa-check-circle"></i> Answer:</strong> ${q.answer}<br>
+                            <strong><i class="fas fa-info-circle"></i> Explanation:</strong> ${q.explanation}
+                        </div>`;
+                    });
+                    resultDiv.innerHTML = html;
+                }
             } else {
                 resultDiv.innerHTML = `<h3><i class="fas fa-exclamation-triangle"></i> Error</h3><p>${result.error}</p>`;
             }
